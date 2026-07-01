@@ -1,0 +1,22 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "transcribe": "tsx ./src/transcribe.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@deepgram/sdk": "^5.5.0",
+    "@workspace/db": "workspace:*",
+    "@workspace/services": "workspace:*",
+    "dotenv": "^17.4.2",
+    "p-limit": "^7.3.0"
+  }
+}

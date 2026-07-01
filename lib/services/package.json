@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/services",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./transcription": "./src/transcription.ts",
+    "./gems": "./src/gems.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@deepgram/sdk": "^5.5.0",
+    "@workspace/db": "workspace:*",
+    "dotenv": "^17.4.2",
+    "openai": "^5.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

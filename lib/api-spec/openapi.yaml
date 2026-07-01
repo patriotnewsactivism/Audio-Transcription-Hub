@@ -1,0 +1,375 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Audio Transcription Hub API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: recordings
+    description: Audio recording management
+  - name: gems
+    description: Analysis gems across recordings
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /recordings/upload:
+    post:
+      operationId: uploadRecording
+      tags: [recordings]
+      summary: Upload an audio recording
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+      responses:
+        "201":
+          description: Recording created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recording"
+        "400":
+          description: No file uploaded
+
+  /recordings:
+    get:
+      operationId: listRecordings
+      tags: [recordings]
+      summary: List all recordings
+      responses:
+        "200":
+          description: List of recordings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recording"
+
+  /recordings/{id}:
+    get:
+      operationId: getRecording
+      tags: [recordings]
+      summary: Get recording with transcript and gems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recording detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordingDetail"
+        "404":
+          description: Recording not found
+    delete:
+      operationId: deleteRecording
+      tags: [recordings]
+      summary: Delete a recording and its data
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted successfully
+        "404":
+          description: Recording not found
+
+  /recordings/{id}/transcribe:
+    post:
+      operationId: transcribeRecording
+      tags: [recordings]
+      summary: Transcribe a recording using Deepgram
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscribeResult"
+        "404":
+          description: Recording not found
+
+  /recordings/{id}/analyze:
+    post:
+      operationId: analyzeRecording
+      tags: [recordings]
+      summary: Analyze a transcript for hidden gems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyzeResult"
+        "400":
+          description: Recording not yet transcribed
+        "404":
+          description: Recording not found
+
+  /recordings/{id}/gems:
+    get:
+      operationId: getRecordingGems
+      tags: [recordings]
+      summary: Get gems for a recording
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [action_item, customer_insight, sentiment_peak, key_quote, decision]
+      responses:
+        "200":
+          description: List of gems
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gem"
+        "404":
+          description: No transcript found
+
+  /gems:
+    get:
+      operationId: listGems
+      tags: [gems]
+      summary: Search gems across all recordings
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [action_item, customer_insight, sentiment_peak, key_quote, decision]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GemWithRecording"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Recording:
+      type: object
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        filePath:
+          type: string
+        fileSize:
+          type: integer
+          nullable: true
+        duration:
+          type: number
+          nullable: true
+        status:
+          type: string
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - filename
+        - filePath
+        - status
+        - createdAt
+        - updatedAt
+
+    Transcript:
+      type: object
+      properties:
+        id:
+          type: integer
+        recordingId:
+          type: integer
+        fullText:
+          type: string
+          nullable: true
+        utterances:
+          nullable: true
+        confidence:
+          type: number
+          nullable: true
+        wordCount:
+          type: integer
+          nullable: true
+        speakerCount:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - recordingId
+        - createdAt
+
+    Gem:
+      type: object
+      properties:
+        id:
+          type: integer
+        transcriptId:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        metadata:
+          nullable: true
+        startTime:
+          type: number
+          nullable: true
+        endTime:
+          type: number
+          nullable: true
+        speaker:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - transcriptId
+        - type
+        - title
+        - content
+        - createdAt
+
+    RecordingDetail:
+      type: object
+      properties:
+        recording:
+          $ref: "#/components/schemas/Recording"
+        transcript:
+          $ref: "#/components/schemas/Transcript"
+          nullable: true
+        gems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Gem"
+
+    TranscribeResult:
+      type: object
+      properties:
+        transcript:
+          $ref: "#/components/schemas/Transcript"
+        status:
+          type: string
+      required:
+        - transcript
+        - status
+
+    AnalyzeResult:
+      type: object
+      properties:
+        gems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Gem"
+        status:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        overallSentiment:
+          type: string
+          nullable: true
+      required:
+        - gems
+        - status
+
+    GemWithRecording:
+      type: object
+      properties:
+        gem:
+          $ref: "#/components/schemas/Gem"
+        transcript:
+          $ref: "#/components/schemas/Transcript"
+        recording:
+          $ref: "#/components/schemas/Recording"
+      required:
+        - gem
+        - transcript
+        - recording
